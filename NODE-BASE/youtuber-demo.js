@@ -2,7 +2,7 @@ const express = require("express");
 const app = express();
 
 const db = new Map();
-var id = 1;
+let id = 1;
 
 let youtuber1 = {
     channelTitle: "youtuber1",
@@ -48,7 +48,7 @@ app.post("/register", (req, res) => {
 
     db.set(id++, req.body);
 
-    res.json({ message: `${db.get(id - 1).channelTitle} + 님의 새 유튜브 채널 개설이 완료되었습니다.` });
+    res.json({ message: `'${db.get(id - 1).channelTitle}'님의 새 유튜브 채널 개설이 완료되었습니다.` });
 });
 
 app.listen(8080);
