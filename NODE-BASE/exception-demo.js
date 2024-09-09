@@ -14,9 +14,11 @@ app.get("/fruits", function (req, res) {
 
 app.get("/fruits/:id", (req, res) => {
     let id = req.params.id;
-    // let fruit = fruits[id];
     let findFruit = fruits.find((f) => f.id == id);
 
     if (findFruit) res.json(findFruit);
-    else res.status(404).send("Fruits not found");
+    else
+        res.status(404).json({
+            message: "Fruits not found",
+        });
 });
