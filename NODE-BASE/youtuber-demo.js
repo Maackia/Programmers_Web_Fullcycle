@@ -38,7 +38,7 @@ app.get("/youtubers", (req, res) => {
 
         res.json(youtubers);
     } else {
-        res.json({
+        res.status(404).json({
             message: "등록된 유튜버가 존재하지 않습니다.",
         });
     }
@@ -58,11 +58,16 @@ app.get("/youtuber/:id", (req, res) => {
 
 app.use(express.json());
 app.post("/register", (req, res) => {
-    console.log(req.body);
+    const channelTitle = req.body.channelTitle;
+    if (channelTitle) {
+        db.set(id++, req.body);
 
-    db.set(id++, req.body);
-
-    res.json({ message: `'${db.get(id - 1).channelTitle}'님의 새 유튜브 채널 개설이 완료되었습니다.` });
+        res.status(201).json({ message: `'${db.get(id - 1).channelTitle}'님의 새 유튜브 채널 개설이 완료되었습니다.` });
+    } else {
+        res.status(400).json({
+            message: "Invalid channelTitle",
+        });
+    }
 });
 
 app.delete("/youtuber/:id", (req, res) => {
@@ -71,24 +76,26 @@ app.delete("/youtuber/:id", (req, res) => {
 
     let youtuber = db.get(id);
     if (youtuber == undefined) {
-        res.json(`'${id}'은(는) 존재하지 않는 유튜브 채널입니다.`);
+        res.status(404).json(`'${id}'은(는) 존재하지 않는 유튜브 채널입니다.`);
     } else {
         const name = youtuber.channelTitle;
         db.delete(id);
 
-        res.json({ message: `'${name}' 채널이 삭제되었습니다.` });
+        res.status(200).json({ message: `'${name}' 채널이 삭제되었습니다.` });
     }
 });
 
 app.delete("/youtubers", (req, res) => {
     if (db.size >= 1) {
         db.clear();
+        httpStatus = 200;
         msg = "등록된 모든 유튜버 정보를 삭제하였습니다.";
     } else {
+        httpStatus = 404;
         msg = "등록된 유튜버 정보가 존재하지 않습니다.";
     }
 
-    res.json({ message: msg });
+    res.status(httpStatus).json({ message: msg });
 });
 
 app.put("/youtuber/:id", (req, res) => {
@@ -97,8 +104,10 @@ app.put("/youtuber/:id", (req, res) => {
 
     let youtuber = db.get(id);
     if (youtuber == undefined) {
+        httpStatus = 404;
         msg = `'${id}'은(는) 존재하지 않는 유튜브 채널입니다.`;
     } else {
+        httpStatus = 200;
         let newTitle = req.body.channelTitle;
         const name = youtuber.channelTitle;
         youtuber.channelTitle = newTitle;
@@ -106,7 +115,7 @@ app.put("/youtuber/:id", (req, res) => {
         msg = `'${name}'님의 채널명이 '${newTitle}'로 변경되었습니다. `;
     }
 
-    res.json({
+    res.status(httpStatus).json({
         message: msg,
     });
 });
