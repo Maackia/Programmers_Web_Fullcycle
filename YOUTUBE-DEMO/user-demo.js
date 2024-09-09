@@ -8,14 +8,14 @@ let db = new Map();
 let id = 1;
 
 app.get("/", (req, res) => {
-    res.send("Hello, Express!");
+    res.send("Main Page of Youtube-Demo Project.");
 });
 
 // Login
 app.post("/login", (req, res) => {});
 
-// Join
-app.post("/join", (req, res) => {
+// Register
+app.post("/register", (req, res) => {
     console.log(req.body);
 
     if (req.body.userId != undefined) {
@@ -33,8 +33,39 @@ app.post("/join", (req, res) => {
     }
 });
 
-// User Info
-app.get("/users/:id", (req, res) => {});
+// User Info, Delete
+app.route("/user/:id")
+    .get((req, res) => {
+        let { id } = req.params;
+        id = parseInt(id);
 
-// Delete User
-app.delete("/users/:id", (req, res) => {});
+        const user = db.get(id);
+        if (user == undefined) {
+            res.status(404).json({
+                message: "User not found",
+            });
+        } else {
+            res.status(200).json({
+                userId: user.userId,
+                name: user.name,
+            });
+        }
+    })
+    .delete((req, res) => {
+        let { id } = req.params;
+        id = parseInt(id);
+
+        const user = db.get(id);
+
+        if (user == undefined) {
+            res.status(404).json({
+                message: "User not found",
+            });
+        } else {
+            db.delete(id);
+
+            res.status(200).json({
+                message: `${user.name}님의 탈퇴 처리가 완료되었습니다.`,
+            });
+        }
+    });
