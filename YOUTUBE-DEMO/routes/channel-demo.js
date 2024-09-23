@@ -1,13 +1,13 @@
 const express = require("express");
-const app = express();
+const router = express.Router();
 
-app.listen(8080);
-app.use(express.json());
+router.use(express.json());
 
 let db = new Map();
 let id = 1;
 
-app.route("/channels")
+router
+    .route("/channels")
     // 채널 전체 조회
     .get((req, res) => {
         if (db.size) {
@@ -42,7 +42,8 @@ app.route("/channels")
         console.log(db);
     });
 
-app.route("/channels/:id")
+router
+    .route("/channels/:id")
     //채널 개별 조회
     .get((req, res) => {
         let { id } = req.params;
@@ -100,3 +101,5 @@ app.route("/channels/:id")
             });
         }
     });
+
+module.exports = router;
