@@ -7,7 +7,7 @@ let db = new Map();
 let id = 1;
 
 router
-    .route("/channels")
+    .route("/")
     // 채널 전체 조회
     .get((req, res) => {
         if (db.size) {
@@ -43,7 +43,7 @@ router
     });
 
 router
-    .route("/channels/:id")
+    .route("/:id")
     //채널 개별 조회
     .get((req, res) => {
         let { id } = req.params;
