@@ -1,8 +1,7 @@
 const express = require("express");
-const app = express();
+const router = express.Router();
 
-app.listen(8080);
-app.use(express.json());
+router.use(express.json());
 
 let db = new Map();
 let id = 1;
@@ -17,12 +16,12 @@ function isEmpty(obj) {
     }
 }
 
-app.get("/", (req, res) => {
+router.get("/", (req, res) => {
     res.send("Main Page of Youtube-Demo Project.");
 });
 
 // Login
-app.post("/login", (req, res) => {
+router.post("/login", (req, res) => {
     const { userId, password } = req.body;
     let loginUser = {};
 
@@ -48,7 +47,7 @@ app.post("/login", (req, res) => {
 });
 
 // Register
-app.post("/register", (req, res) => {
+router.post("/register", (req, res) => {
     console.log(req.body);
 
     if (req.body.userId != undefined) {
@@ -67,7 +66,8 @@ app.post("/register", (req, res) => {
 });
 
 // User Info, Delete
-app.route("/user/:id")
+router
+    .route("/user/:id")
     .get((req, res) => {
         let { id } = req.params;
         id = parseInt(id);
@@ -102,3 +102,5 @@ app.route("/user/:id")
             });
         }
     });
+
+module.exports = router;
