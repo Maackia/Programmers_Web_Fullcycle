@@ -10,25 +10,35 @@ router
     .route("/")
     // 채널 전체 조회
     .get((req, res) => {
-        if (db.size) {
-            let channles = [];
+        let { userId } = req.body;
+        let channels = [];
 
-            db.forEach(function (value) {
-                channles.push(value);
-            });
-
-            res.status(200).json(channles);
-        } else {
-            res.status(404).json({
-                message: "채널 정보를 찾을 수 없습니다.",
+        if (!userId) {
+            return res.status(401).json({
+                message: "로그인이 필요한 페이지입니다.",
             });
         }
+
+        if (db.size && userId) {
+            // CASE: No userId in body
+            db.forEach(function (value) {
+                if (value.userId === userId) {
+                    channels.push(value);
+                }
+            });
+
+            if (channels.length > 0) {
+                return res.status(200).json(channels);
+            }
+        }
+        noChannel();
     })
 
     // 채널 개별 생성
     .post((req, res) => {
         if (req.body.channelTitle) {
-            db.set(id++, req.body);
+            let channel = req.body;
+            db.set(id++, channel);
 
             res.status(201).json({
                 message: `${db.get(id - 1).channelTitle} 채널 개설이 완료되었습니다.`,
@@ -54,9 +64,7 @@ router
         if (channel) {
             res.status(200).json(channel);
         } else {
-            res.status(404).json({
-                message: "채널 정보를 찾을 수 없습니다.",
-            });
+            noChannel();
         }
     })
 
@@ -78,9 +86,7 @@ router
                 message: `${oldTitle} 채널명이 ${newTitle}로 변경되었습니다.`,
             });
         } else {
-            res.status(404).json({
-                message: "채널 정보를 찾을 수 없습니다.",
-            });
+            noChannel();
         }
     })
 
@@ -96,10 +102,14 @@ router
                 message: `${channel.channelTitle}이 정상적으로 삭제되었습니다.`,
             });
         } else {
-            res.status(404).json({
-                message: "채널 정보를 찾을 수 없습니다.",
-            });
+            noChannel();
         }
     });
+
+function noChannel() {
+    return res.status(404).json({
+        message: "채널 정보를 찾을 수 없습니다.",
+    });
+}
 
 module.exports = router;

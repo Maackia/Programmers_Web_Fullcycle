@@ -37,26 +37,33 @@ router.post("/login", (req, res) => {
 
         // Checking Password
         if (loginUser.password === password) {
-            console.log("Pass Password");
+            res.status(200).json({
+                message: `${loginUser.name}님 로그인 되었습니다.`,
+            });
         } else {
-            console.log("Wrong Password");
+            res.status(400).json({
+                message: "비밀번호가 틀렸습니다.",
+            });
         }
     } else {
-        console.log("입력하신 아이디를 찾을 수 없습니다.");
+        res.status(404).json({
+            message: "가입된 회원 정보를 찾을 수 없습니다.",
+        });
     }
 });
 
 // Register
+// TODO: 중복 회원 가입 방지
 router.post("/register", (req, res) => {
     console.log(req.body);
 
-    if (req.body.userId != undefined) {
-        db.set(id++, req.body);
+    const { userId } = req.body;
 
-        const name = db.get(id - 1).name;
+    if (userId) {
+        db.set(userId, req.body);
 
         res.status(201).json({
-            message: `${name}님 환영합니다.`,
+            message: `${db.get(userId).name}님 환영합니다.`,
         });
     } else {
         res.status(400).json({
@@ -67,38 +74,35 @@ router.post("/register", (req, res) => {
 
 // User Info, Delete
 router
-    .route("/user/:id")
+    .route("/users")
     .get((req, res) => {
-        let { id } = req.params;
-        id = parseInt(id);
+        let { userId } = req.body;
+        const user = db.get(userId);
 
-        const user = db.get(id);
-        if (user == undefined) {
-            res.status(404).json({
-                message: "User not found",
-            });
-        } else {
+        if (user) {
             res.status(200).json({
                 userId: user.userId,
                 name: user.name,
             });
-        }
-    })
-    .delete((req, res) => {
-        let { id } = req.params;
-        id = parseInt(id);
-
-        const user = db.get(id);
-
-        if (user == undefined) {
+        } else {
             res.status(404).json({
                 message: "User not found",
             });
-        } else {
-            db.delete(id);
+        }
+    })
+    .delete((req, res) => {
+        let { userId } = req.body;
+        const user = db.get(userId);
+
+        if (user) {
+            db.delete(userId);
 
             res.status(200).json({
                 message: `${user.name}님의 탈퇴 처리가 완료되었습니다.`,
+            });
+        } else {
+            res.status(404).json({
+                message: "User not found",
             });
         }
     });
