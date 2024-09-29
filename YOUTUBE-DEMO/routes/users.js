@@ -1,10 +1,17 @@
 const express = require("express");
+const jwt = require("jsonwebtoken");
+const { config } = require("dotenv");
+config();
+
 const router = express.Router();
 
-router.use(express.json());
+const conn = require("../db");
 
-let db = new Map();
-let id = 1;
+// conn.query("SELECT * FROM `users`", function (err, results, fields) {
+//     res.status(200).json(results);
+// });
+
+router.use(express.json());
 
 function isEmpty(obj) {
     if (obj.constructor === Object) {
@@ -22,48 +29,48 @@ router.get("/", (req, res) => {
 
 // Login
 router.post("/login", (req, res) => {
-    const { userId, password } = req.body;
-    let loginUser = {};
-
-    db.forEach((user, id) => {
-        // a: value, b: key, c: Map
-        if (user.userId === userId) {
-            loginUser = user;
+    const { email, password } = req.body;
+    let sql = `SELECT * FROM users WHERE email = ?`;
+    conn.query(sql, [email], function (err, results) {
+        if (err) {
+            console.error("데이터베이스 쿼리 오류:", err);
+            return res.status(500).json({ message: "서버 오류가 발생했습니다." });
         }
-    });
 
-    if (isEmpty(loginUser) != true) {
-        console.log("userId Found");
+        const loginUser = results[0];
 
-        // Checking Password
-        if (loginUser.password === password) {
-            res.status(200).json({
-                message: `${loginUser.name}님 로그인 되었습니다.`,
-            });
-        } else {
-            res.status(400).json({
-                message: "비밀번호가 틀렸습니다.",
-            });
+        if (!loginUser) {
+            return res.status(404).json({ message: "이메일 또는 비밀번호가 틀렸습니다." });
         }
-    } else {
-        res.status(404).json({
-            message: "가입된 회원 정보를 찾을 수 없습니다.",
+
+        if (loginUser.password !== password) {
+            return res.status(400).json({ message: "비밀번호가 틀렸습니다." });
+        }
+
+        res.status(200).json({
+            message: `${loginUser.name}님 로그인 되었습니다.`,
         });
-    }
+    });
 });
 
 // Register
 // TODO: 중복 회원 가입 방지
 router.post("/register", (req, res) => {
     console.log(req.body);
+    const { email, name, password, contact } = req.body;
 
-    const { userId } = req.body;
+    if (email) {
+        let sql = `INSERT INTO users (email, name, password, contact) VALUES (?, ?, ?, ?)`;
+        let values = [email, name, password, contact];
 
-    if (userId) {
-        db.set(userId, req.body);
-
-        res.status(201).json({
-            message: `${db.get(userId).name}님 환영합니다.`,
+        conn.query(sql, values, function (err, results) {
+            if (err) {
+                console.error("데이터베이스 쿼리 오류:", err);
+                return res.status(500).json({
+                    message: "서버 오류가 발생했습니다.",
+                });
+            }
+            res.status(201).json(results);
         });
     } else {
         res.status(400).json({
@@ -76,35 +83,39 @@ router.post("/register", (req, res) => {
 router
     .route("/users")
     .get((req, res) => {
-        let { userId } = req.body;
-        const user = db.get(userId);
+        let { email } = req.body;
+        let sql = `SELECT * FROM users WHERE email = ?`;
 
-        if (user) {
-            res.status(200).json({
-                userId: user.userId,
-                name: user.name,
-            });
-        } else {
-            res.status(404).json({
-                message: "User not found",
-            });
-        }
+        conn.query(sql, [email], function (err, results) {
+            if (err) {
+                console.error("데이터베이스 쿼리 오류:", err);
+                return res.status(500).json({
+                    message: "서버 오류가 발생했습니다.",
+                });
+            }
+
+            if (results && results.length > 0) {
+                res.status(200).json(results);
+            } else {
+                res.status(404).json({
+                    message: "사용자를 찾을 수 없습니다.",
+                });
+            }
+        });
     })
     .delete((req, res) => {
-        let { userId } = req.body;
-        const user = db.get(userId);
+        let { email } = req.body;
+        let sql = `DELETE FROM users WHERE email = ?`;
 
-        if (user) {
-            db.delete(userId);
-
-            res.status(200).json({
-                message: `${user.name}님의 탈퇴 처리가 완료되었습니다.`,
-            });
-        } else {
-            res.status(404).json({
-                message: "User not found",
-            });
-        }
+        conn.query(sql, [email], function (err, results) {
+            if (err) {
+                console.error("데이터베이스 쿼리 오류:", err);
+                return res.status(500).json({
+                    message: "서버 오류가 발생했습니다.",
+                });
+            }
+            res.status(200).json(results);
+        });
     });
 
 module.exports = router;
