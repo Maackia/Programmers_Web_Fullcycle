@@ -1,19 +1,23 @@
 const express = require("express");
 const router = express.Router();
 const conn = require("../db");
+const { body, param, validationResult } = require("express-validator");
 
 router.use(express.json());
+
+const validate = (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+    next();
+};
 
 router
     .route("/")
     // 채널 전체 조회
-    .get((req, res) => {
-        let { userId } = req.body;
-
-        if (!userId) {
-            return res.status(400).json({ message: "사용자 ID가 필요합니다." });
-        }
-
+    .get([body("userId").notEmpty().isInt().withMessage("사용자 ID가 필요합니다."), validate], (req, res, next) => {
+        const { userId } = req.body;
         let sql = `SELECT * FROM channels WHERE user_id = ?`;
 
         conn.query(sql, [userId], function (err, results) {
@@ -25,6 +29,9 @@ router
             }
 
             if (results && results.length > 0) {
+                console.log(
+                    `SEARCH CHANNELS: Channel_id: ${results[0].id}, Channel_name: ${results[0].name}, User_id: ${results[0].user_id}`
+                );
                 return res.status(200).json(results);
             } else {
                 return noChannel(res);
@@ -33,12 +40,21 @@ router
     })
 
     // 채널 개별 생성
-    .post((req, res) => {
-        if (req.body.name) {
-            let { name, userId } = req.body;
+    .post(
+        [
+            body("userId").notEmpty().isInt().withMessage("사용자 ID가 필요합니다."),
+            body("name").notEmpty().isString().withMessage("채널명이 필요합니다."),
+        ],
+        (req, res) => {
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                return res.status(400).json({ errors: errors.array() });
+            }
 
-            let sql = `INSERT INTO channels (name, user_id) VALUES (?, ?)`;
-            let values = [name, userId];
+            const { name, userId } = req.body;
+
+            const sql = `INSERT INTO channels (name, user_id) VALUES (?, ?)`;
+            const values = [name, userId];
 
             conn.query(sql, values, function (err, results) {
                 if (err) {
@@ -47,20 +63,21 @@ router
                         message: "서버 오류가 발생했습니다.",
                     });
                 }
-                console.log(`INSERT INTO channels (name, user_id) VALUES (${name}, ${userId})`);
-                res.status(201).json(`${name} 채널이 생성되었습니다.`);
-            });
-        } else {
-            res.status(400).json({
-                message: "입력 값을 다시 확인해주세요.",
+                console.log(`CREATE CHANNEL: Channel ${name}, User ${userId}`);
+                res.status(201).json({ message: `${name} 채널이 생성되었습니다.` });
             });
         }
-    });
+    );
 
 router
     .route("/:id")
     //채널 개별 조회
-    .get((req, res) => {
+    .get([param("id").notEmpty().withMessage("채널 ID가 필요합니다.")], (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
         let { id } = req.params;
         id = parseInt(id);
         let sql = `SELECT * FROM channels WHERE id = ?`;
@@ -82,41 +99,72 @@ router
     })
 
     // 채널 개별 수정
-    .put((req, res) => {
-        let { id } = req.params;
-        id = parseInt(id);
+    .put(
+        [
+            param("id").notEmpty().withMessage("채널 ID가 필요합니다."),
+            body("name").notEmpty().isString().withMessage("채널명이 필요합니다."),
+        ],
+        (req, res) => {
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                return res.status(400).json({ errors: errors.array() });
+            }
 
-        let channel = db.get(id);
+            const { name } = req.body;
+            let { id } = req.params;
+            id = parseInt(id);
 
-        if (channel) {
-            let oldTitle = channel.channelTitle;
-            let newTitle = req.body.channelTitle;
+            let sql = `UPDATE channels SET name = ? WHERE id = ?`;
+            let values = [name, id];
 
-            channel.channelTitle = newTitle;
-            db.set(id, channel);
+            conn.query(sql, values, function (err, results) {
+                if (err) {
+                    console.error("데이터베이스 쿼리 오류:", err);
+                    return res.status(500).json({
+                        message: "서버 오류가 발생했습니다.",
+                    });
+                }
 
-            res.status(201).json({
-                message: `${oldTitle} 채널명이 ${newTitle}로 변경되었습니다.`,
+                if (results.affectedRows > 0) {
+                    res.status(200).json({
+                        message: `채널명이 ${name}로 변경되었습니다.`,
+                    });
+                } else {
+                    noChannel(res);
+                }
             });
-        } else {
-            noChannel(res);
         }
-    })
+    )
 
     // 채널 개별 삭제
-    .delete((req, res) => {
+    .delete([param("id").notEmpty().withMessage("채널 ID가 필요합니다.")], (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
         let { id } = req.params;
         id = parseInt(id);
 
-        let channel = db.get(id);
-        if (channel) {
-            db.delete(id);
-            res.status(200).json({
-                message: `${channel.channelTitle}이 정상적으로 삭제되었습니다.`,
-            });
-        } else {
-            noChannel(res);
-        }
+        let sql = `DELETE FROM channels WHERE id = ?`;
+        let values = [id];
+
+        conn.query(sql, values, function (err, results) {
+            if (err) {
+                console.error("데이터베이스 쿼리 오류:", err);
+                return res.status(500).json({
+                    message: "서버 오류가 발생했습니다.",
+                });
+            }
+
+            if (results.affectedRows > 0) {
+                res.status(200).json({
+                    message: `채널이 정상적으로 삭제되었습니다.`,
+                });
+            } else {
+                noChannel(res);
+            }
+        });
     });
 
 function noChannel(res) {
