@@ -1,9 +1,11 @@
 const express = require("express");
+const router = express.Router();
+
 const jwt = require("jsonwebtoken");
+
 const { config } = require("dotenv");
 config();
 
-const router = express.Router();
 const conn = require("../db");
 const { body, param, validationResult } = require("express-validator");
 
@@ -52,12 +54,23 @@ router.post(
             const loginUser = results[0];
 
             if (!loginUser) {
-                return res.status(404).json({ message: "이메일 또는 비밀번호가 틀렸습니다." });
+                return res.status(401).json({ message: "이메일 또는 비밀번호가 틀렸습니다." });
             }
 
             if (loginUser.password !== password) {
-                return res.status(400).json({ message: "비밀번호가 틀렸습니다." });
+                return res.status(401).json({ message: "이메일 또는 비밀번호가 틀렸습니다." });
             }
+
+            const token = jwt.sign({ email: loginUser.email, name: loginUser.name }, process.env.PRIVATE_KEY, {
+                expiresIn: "30m",
+                issuer: "youtube-demo",
+            });
+
+            res.cookie("token", token, {
+                httpOnly: true,
+                secure: true,
+                sameSite: "strict",
+            });
 
             res.status(200).json({
                 message: `${loginUser.name}님 로그인 되었습니다.`,
