@@ -24,6 +24,14 @@
 
 ### Node.js + Express ++
 
-## Week 6
+## Week 6 ~ 9
 
 ### REST API
+
+## Week 10 ~ 11
+
+### React + TypeScript
+
+## Week 12
+
+### React Project
