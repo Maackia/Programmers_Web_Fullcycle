@@ -3,7 +3,7 @@ import { createGlobalTheme, style } from "@vanilla-extract/css";
 export const vars = createGlobalTheme(":root", {
     color: {
         main: "#ffa726",
-        mainDarker: "f57c00",
+        mainDarker: "#f57c00",
         mainFaded: "#ffb74d",
         mainFadedBright: "#ffb74da6",
         list: "rgb(235, 236, 240)",
@@ -17,7 +17,7 @@ export const vars = createGlobalTheme(":root", {
         updateButton: "rgb(237,180,88)",
         deleteButton: "rgb(237,51,88)",
     },
-    fontSize: {
+    fontSizing: {
         T1: "32px",
         T2: "24px",
         T3: "18px",
